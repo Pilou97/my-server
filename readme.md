@@ -1,6 +1,6 @@
 # My Ansible Server
 
-This repository is the configuration of my personal server
+This repository is the configuration of my personal server using Ansible
 
 # How to install ?
 
