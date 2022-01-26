@@ -14,7 +14,7 @@ This repository is the configuration of my personal server
 ansible-playbook -K playbook.yml
 ```
 
-# What does it install ? 
+# Features ? 
 
  - plexmediaserver, the latest version
  - rtorrent and flood behind a vpn
