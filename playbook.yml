@@ -1,0 +1,171 @@
+---
+- hosts: test
+  become: yes
+  become_user: root
+  environment:
+    PYTHONPATH: "/home/path/.local/lib/python2.7/site-packages"
+  tasks:
+    - name: Install Utils Things
+      apt:
+        state: latest 
+        update_cache: true
+        cache_valid_time: 3600
+        pkg:
+          - curl
+          - ca-certificates
+          - gnupg
+          - lsb-release
+          - python3-pip
+          - snapd
+    - name: Install Snap
+      snap:
+        state: present
+        name:
+          - core
+    - name: Install Packages via snap
+      snap:
+        state: present
+        name:
+          - certbot
+        classic: yes
+    - name: Add certbot to path
+      file:
+        src: /snap/bin/certbot
+        dest: /usr/bin/certbot
+        state: link
+    - name: Install Some python modules
+      pip:
+        state: present
+        name:
+          - docker
+    - name: Install Nginx
+      apt: 
+        state: latest 
+        update_cache: true
+        cache_valid_time: 3600
+        pkg:
+          - nginx 
+    - name: Add docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+    - name: Add docker repository to apt
+      apt_repository:
+        repo: deb https://download.docker.com/linux/debian bullseye stable
+    - name: Install docker
+      apt:
+        state: latest
+        update_cache: true
+        cache_valid_time: 3600
+        pkg:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+    - name: Ensure docker volumes exists
+      file:
+        path: /vw-data
+        state: directory
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+    - name: Pull Vaultwarden container
+      docker_image:
+        name: vaultwarden/server:latest
+        source: pull
+    - name: Start Vaultwarden container
+      docker_container:
+        name: vaultwarden
+        image: vaultwarden/server:latest
+        state: started
+        volumes: /vw-data/:/data/
+        ports:
+          - 8080:80
+    - name: Check Current Plex Version
+      shell: dpkg --list | grep plexmediaserver | awk '{print $3}'
+      register: plex_current_version
+      changed_when: false
+    - name: Check Last Plex Version
+      shell: curl https://plex.tv/api/downloads/5.json 2>/dev/null | jq -r '.computer.Linux.version'
+      register: plex_last_version
+      changed_when: false
+    - name: Install Plex
+      shell: |
+        wget $(curl https://plex.tv/api/downloads/5.json 2>/dev/null | jq -r '.computer.Linux.releases[] | select(.label | contains("Ubuntu (16.04+) / Debian (8+) - Intel/AMD 64-bit")) | .url')
+        dpkg -i *.deb
+        rm -rf *.deb
+      when: plex_current_version.stdout != plex_last_version.stdout
+    - name: Copy downloader files
+      copy:
+        src: torrent/
+        dest: /tmp/torrent/
+        owner: root
+        group: root
+        mode: 0644
+    - name: Copy sensitive data files
+      copy:
+        src: sensitive/
+        dest: /tmp/torrent/sensitive/
+        owner: root
+        group: root
+        mode: 0400
+    - name: Build Torrent Image
+      shell: docker build /tmp/torrent -t torrent:latest
+    - name: Run the image
+      docker_container:
+        name: torrent
+        image: torrent:latest
+        state: started
+        dns_servers: 1.1.1.1
+        privileged: true
+        volumes: 
+          - /downloads-data/:/downloads/
+          - /torrent-data/:/torrent/
+        ports:
+          - 8000:3000
+    - name: Delete default conf of nginx
+      file:
+        path: "{{item}}"
+        state: absent
+      loop:
+        - /etc/nginx/sites-available/default
+        - /etc/nginx/sites-enabled/default
+    - name: Setup reverse proxy
+      template:
+        src: templates/proxy.j2
+        dest: /etc/nginx/sites-enabled/{{item.dest}}
+        mode: 0644
+      vars:
+        location: "{{item.location}}"
+        server_name: "{{item.server_name}}"
+      loop:
+        - { dest: plex, location: http://localhost:32400, server_name: plex.duboispl.com }
+        - { dest: pass, location: http://localhost:8000, server_name: pass.duboispl.com }
+        - { dest: torrent, location: http://localhost:8001, server_name: torrent.duboispl.com }
+    # - name: Setup SSL Certificate
+    #   shell: certbot --force-renewal --nginx --non-interactive --agree-tos -m pierrelouis.dubois@tutanota.com -d {{item}}
+    #   loop:
+    #     - plex.duboispl.com
+    #     - pass.duboispl.com
+    #     - torrent.duboispl.com
+    - name: Some cron task
+      cron:
+        name: "{{item.name}}"
+        hour: "{{item.hour}}"
+        minute: "{{item.minute}}"
+        job: "{{item.job}}"
+        user: root
+        state: present
+      loop:
+        - { name: Auto Update, hour: 6, minute: 0, job: /usr/bin/apt update && /usr/bin/apt upgrade -y }
+    - name: Some monthly cron task
+      cron:
+        name: "{{item.name}}"
+        job: "{{item.job}}"
+        special_time: "{{item.special_time}}"
+        user: root
+        state: present
+      loop:
+        - { name: Update SSL, special_time: monthly, job: /usr/bin/certbot renew --nginx}
+

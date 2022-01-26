@@ -1,0 +1,6 @@
+system.daemon.set = true
+
+network.scgi.open_local = /torrent/rpc.socket
+execute.nothrow = chmod,770,/torrent/rpc.socket
+session.path.set = /torrent/session
+directory.default.set = /downloads
