@@ -17,6 +17,8 @@
           - lsb-release
           - python3-pip
           - snapd
+          - zsh
+          - neovim
     - name: Install Snap
       snap:
         state: present
@@ -38,6 +40,7 @@
         state: present
         name:
           - docker
+          - pexpect
     - name: Install Nginx
       apt: 
         state: latest 
@@ -168,4 +171,38 @@
         state: present
       loop:
         - { name: Update SSL, special_time: monthly, job: /usr/bin/certbot renew --nginx}
-
+    - name: Clone Oh My Zsh
+      become_user: pilou
+      git: 
+        repo: https://github.com/ohmyzsh/ohmyzsh.git
+        dest: /home/pilou/.oh-my-zsh
+        depth: 1
+        single_branch: yes
+    - name: Install .zshrc
+      template:
+          src: templates/zshrc.j2
+          dest: /home/pilou/.zshrc
+          mode: 0644
+          group: pilou
+          owner: pilou
+    - name: Set zsh as the new shell
+      replace:
+        path: /etc/passwd
+        regexp: '(pilou.*)/bin/bash'
+        replace: '\1/usr/bin/zsh'
+    - name: Install Starship
+      shell: sh -c "$(curl -fsSL https://starship.rs/install.sh)" - --yes
+    - name: Install Starship configuration
+      template:
+        src: templates/starship-configuration.j2
+        dest: /home/pilou/.config/starship.toml 
+        mode: 0644
+        group: pilou
+        owner: pilou
+    - name: Install Git Config
+      template:
+        src: templates/gitconfig.j2
+        dest: /home/pilou/.gitconfig
+        mode: 0644
+        group: pilou
+        owner: pilou
