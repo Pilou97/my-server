@@ -21,6 +21,7 @@ ansible-playbook -K playbook.yml
  - vaultwarden (with a backup system)
  - docker
  - reverse proxy with SSL
+ - radarr
 
 # rtorrent
 
@@ -28,3 +29,20 @@ The rtorrent socket file is located in:
 ```
 /torrent/rpc.socket
 ```
+
+# Configuration
+
+## rtorrent
+
+The rtorrent socket file is located under:
+```
+/torrent/rpc.socket
+```
+
+## Jackett
+
+Add your favorite torrent provider
+
+## Radarr
+
+Configure radarr to use jacket and flood (no rtorrent because I am using unix socket for rtorrent)
