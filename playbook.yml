@@ -19,6 +19,7 @@
           - snapd
           - zsh
           - neovim
+          - zip
     - name: Install Snap
       snap:
         state: present
@@ -241,3 +242,28 @@
         volumes:
           - /radarr-config/:/config
           - /downloads:/downloads # replace by a variable, cause this volume is gonna change
+    - name: Install Rclone
+      shell: curl https://rclone.org/install.sh | bash
+      ignore_errors: yes
+    - name: Copy rclone conf
+      copy:
+        src: sensitive/rclone.conf
+        dest: /root/rclone.conf
+        owner: root
+        group: root
+        mode: 0400
+    - name: Copy rclone script
+      copy:
+        src: scripts/bitwarden-backup.sh
+        dest: /root/bitwarden-backup.sh
+        owner: root
+        group: root
+        mode: 0100
+    - name: Add Bitwarden backup to cron
+      cron:
+        name: "Backup bitwarden"
+        hour: "01"
+        minute: "00"
+        job: "/root/bitwarden-backup.sh"
+        user: root
+        state: present

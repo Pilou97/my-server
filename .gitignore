@@ -1,2 +1,3 @@
 sensitive/auth.txt
 sensitive/conf.ovpn
+sensitive/rclone.conf

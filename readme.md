@@ -18,7 +18,7 @@ ansible-playbook -K playbook.yml
 
  - plexmediaserver, the latest version
  - rtorrent and flood behind a vpn
- - vaultwarden (with a backup system)
+ - vaultwarden and a backup system
  - docker
  - reverse proxy with SSL
  - radarr
@@ -46,3 +46,7 @@ Add your favorite torrent provider
 ## Radarr
 
 Configure radarr to use jacket and flood (no rtorrent because I am using unix socket for rtorrent)
+
+## Bitwarden backup
+
+Put a file name rclone.conf insite the sentitive folder
