@@ -11,7 +11,7 @@ This repository is the configuration of my personal server using Ansible
 (The sensitive folder is copied in destination with read-only permission for root user)
 
 ```
-ansible-playbook -K playbook.yml
+ansible-playbook playbook.yml -K -i hosts
 ```
 
 # Features ? 
