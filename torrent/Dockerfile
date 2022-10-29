@@ -9,6 +9,7 @@ RUN apt update && \
   flood \
   openvpn \
   curl \
+  iputils-ping \
   && \
   mkdir -p /dev/net && \
   mknod /dev/net/tun c 10 200 && \
@@ -27,6 +28,6 @@ COPY auth.txt /root/auth.txt
 RUN chmod +x start.sh && \
  chmod +x start-downloader.sh
 
-HEALTHCHECK CMD curl --fail ipinfo.io || exit 1
+HEALTHCHECK CMD ping -c 1 google.fr || exit 1
 
 CMD ["./start.sh"]
