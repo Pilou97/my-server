@@ -2,3 +2,5 @@ sensitive/auth.txt
 sensitive/conf.ovpn
 sensitive/rclone.conf
 hosts
+
+torrent/auth.txt
